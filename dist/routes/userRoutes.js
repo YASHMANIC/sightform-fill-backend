@@ -48,82 +48,60 @@ if (!JWT_SECRET) {
     console.error("JWT SECRET WAS MISSING");
     process.exit(1);
 }
-// Create user
+// REGISTER
 router.post('/register', async (req, res) => {
     try {
         const user = new model_1.UserModel(req.body);
-        const TUser = { email: user.email,
-            name: user.name
-        };
         const checkUser = await model_1.UserModel.findOne({ email: user.email });
         if (checkUser) {
             return res.status(409).json({ error: "User Already Exists" });
         }
-        const token = jsonwebtoken_1.default.sign(TUser, JWT_SECRET, { expiresIn: "7d" });
         user.password = await bcryptjs_1.default.hash(user.password, 10);
         const saved = await user.save();
-        // Set token as cookie
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // true in production (HTTPS only)
-            sameSite: "lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+        const payload = { email: saved.email, name: saved.name };
+        const token = jsonwebtoken_1.default.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+        return res.status(201).json({
+            success: "User Created Successfully",
+            token,
+            user: payload
         });
-        return res.status(201).json({ success: "User Created Successfully" });
     }
     catch (error) {
-        console.log("Registration Error", error);
+        console.error("Registration Error", error);
         return res.status(400).json({ error: error.message });
     }
 });
-// ✅ This only allows fetching by email
+// LOGIN
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || typeof email !== 'string' || email.trim() === '') {
+        if (!email?.trim())
             return res.status(400).json({ error: 'Email is required' });
-        }
-        if (!password || typeof password !== 'string' || password.trim() === '') {
+        if (!password?.trim())
             return res.status(400).json({ error: 'Password is required' });
-        }
         const user = await model_1.UserModel.findOne({ email });
-        if (!user) {
+        if (!user)
             return res.status(404).json({ error: 'User not found' });
-        }
         const passwordCheck = await bcryptjs_1.default.compare(password, user.password);
-        if (!passwordCheck) {
+        if (!passwordCheck)
             return res.status(401).json({ error: 'Invalid password' });
-        }
-        const TUser = {
-            email: user.email,
-            name: user.name
-        };
-        const token = jsonwebtoken_1.default.sign(TUser, JWT_SECRET, { expiresIn: "7d" });
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // set to true in production with HTTPS
-            sameSite: "lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+        const payload = { email: user.email, name: user.name };
+        const token = jsonwebtoken_1.default.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+        return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            token,
+            user: payload
         });
-        return res.status(200).json({ success: true, message: user.name });
     }
     catch (error) {
         return res.status(500).json({ error: error.message });
     }
 });
+// LOGOUT (client-side should delete the token)
 router.post('/logout', (req, res) => {
-    try {
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-        });
-        return res.status(200).json({ success: 'Logged out successfully' });
-    }
-    catch (error) {
-        console.error("Something went wrong", error);
-        return res.status(500).json({ message: "Server Side Error" });
-    }
+    // In header-based auth, logout is typically handled on client side
+    // Optionally, you can implement token blacklisting here if needed
+    return res.status(200).json({ success: 'Logged out successfully' });
 });
 exports.default = router;

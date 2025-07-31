@@ -12,12 +12,13 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Get token from 'Bearer <token>'
+
   if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    // Attach user to req, but first extend the type to avoid TS error
     (req as any).user = user;
     next();
   } catch (err) {

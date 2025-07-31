@@ -6,12 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const authenticateToken = (req, res, next) => {
-    const token = req.cookies.token;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Get token from 'Bearer <token>'
     if (!token)
         return res.status(401).json({ message: 'Unauthorized' });
     try {
         const user = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        // Attach user to req, but first extend the type to avoid TS error
         req.user = user;
         next();
     }

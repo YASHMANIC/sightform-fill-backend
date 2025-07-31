@@ -41,8 +41,13 @@ mongoose.connect(DB_URL)
 
 app.use('/users', userRoutes);
 app.use('/files',authenticateToken,fileRoutes)
+
 app.get("/protected", authenticateToken, (req: Request, res: Response) => {
    return res.status(200).json({ user: (req as any).user });
+});
+
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({ message: 'Server is running' });
 });
 
 app.listen(PORT, () => {

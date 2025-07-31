@@ -52,12 +52,11 @@ if (!BASE_URL) {
     console.error("Base Url Not Available");
     process.exit(1);
 }
-console.log(BASE_URL);
 app.use(express.json());
 app.use((0, cookie_parser_1.default)());
 app.use(ratelimit_1.limiter);
 app.use((0, cors_1.default)({
-    origin: "http://localhost:3000", // allow only this origin
+    origin: BASE_URL, // allow only this origin
     credentials: true // allow cookies if needed
 }));
 const PORT = process.env.PORT || 8000;
